@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Pyth Defender — Submit Score On-Chain</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#00000e;color:#e9d5ff;font-family:'Share Tech Mono',monospace;min-height:100vh;overflow-x:hidden;}
+
+/* Background stars */
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 20%,rgba(55,0,110,.15)0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(15,0,70,.2)0%,transparent 60%);pointer-events:none;z-index:0;}
+
+.page{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:32px 20px;}
+
+/* Header */
+.header{text-align:center;margin-bottom:40px;}
+.logo{font-family:'Orbitron',monospace;font-size:28px;font-weight:900;color:#a78bfa;letter-spacing:5px;text-shadow:0 0 40px #7c3aed;display:block;margin-bottom:6px;}
+.tagline{font-size:10px;color:#6d28d9;letter-spacing:3px;}
+.pyth-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(109,40,217,.15);border:1px solid rgba(139,92,246,.3);border-radius:20px;padding:6px 16px;margin-top:12px;font-size:9px;color:#a78bfa;letter-spacing:2px;}
+.pyth-badge::before{content:'⬡';font-size:14px;}
+
+/* Cards */
+.card{background:rgba(5,0,20,.85);border:1px solid rgba(139,92,246,.22);border-radius:12px;padding:24px;margin-bottom:20px;backdrop-filter:blur(10px);}
+.card-title{font-family:'Orbitron',monospace;font-size:11px;color:#7c3aed;letter-spacing:3px;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.card-title::before{content:'';width:20px;height:1px;background:rgba(139,92,246,.5);}
+.card-title::after{content:'';flex:1;height:1px;background:rgba(139,92,246,.15);}
+
+/* Wallet connect */
+.wallet-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.wallet-addr{font-family:'Share Tech Mono',monospace;font-size:11px;color:#34d399;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);padding:8px 14px;border-radius:6px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.wallet-addr.empty{color:#4c1d95;border-color:rgba(76,29,149,.3);}
+
+/* Buttons */
+.btn{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:2px;padding:11px 24px;border-radius:8px;cursor:pointer;transition:all .15s;border:none;white-space:nowrap;}
+.btn-primary{background:linear-gradient(135deg,#7c3aed,#4c1d95);border:1px solid #a78bfa;color:#e9d5ff;box-shadow:0 0 20px rgba(124,58,237,.3);}
+.btn-primary:hover{background:linear-gradient(135deg,#8b5cf6,#6d28d9);transform:scale(1.03);box-shadow:0 0 30px rgba(139,92,246,.5);}
+.btn-primary:disabled{background:rgba(76,29,149,.3);border-color:rgba(139,92,246,.2);color:#4c1d95;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-success{background:linear-gradient(135deg,#059669,#064e3b);border:1px solid #34d399;color:#d1fae5;}
+.btn-success:hover{background:linear-gradient(135deg,#10b981,#065f46);transform:scale(1.03);}
+.btn-ghost{background:transparent;border:1px solid rgba(139,92,246,.3);color:#7c3aed;}
+.btn-ghost:hover{border-color:#a78bfa;color:#c4b5fd;}
+
+/* Form */
+.form-row{display:flex;gap:12px;margin-bottom:14px;align-items:flex-end;flex-wrap:wrap;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group label{font-size:7px;color:#6d28d9;letter-spacing:2px;}
+.form-group input{background:rgba(109,40,217,.12);border:1px solid rgba(139,92,246,.3);color:#e9d5ff;font-family:'Share Tech Mono',monospace;font-size:13px;padding:9px 13px;border-radius:7px;outline:none;width:100%;}
+.form-group input:focus{border-color:#a78bfa;background:rgba(109,40,217,.2);}
+
+/* Status / log */
+.status-box{background:rgba(0,0,10,.6);border:1px solid rgba(139,92,246,.15);border-radius:8px;padding:16px;margin-top:16px;min-height:64px;}
+.status-line{font-size:10px;color:#6d28d9;letter-spacing:1px;margin-bottom:5px;line-height:1.7;}
+.status-line.ok{color:#34d399;}
+.status-line.err{color:#f43f5e;}
+.status-line.info{color:#a78bfa;}
+.status-line.warn{color:#fbbf24;}
+
+/* Result card */
+.result-card{background:linear-gradient(135deg,rgba(5,0,30,.9),rgba(15,0,50,.9));border:1px solid rgba(139,92,246,.5);border-radius:12px;padding:24px;text-align:center;margin-top:16px;display:none;}
+.result-title{font-family:'Orbitron',monospace;font-size:14px;font-weight:900;color:#fbbf24;letter-spacing:3px;margin-bottom:12px;}
+.result-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:16px;}
+.result-stat{background:rgba(0,0,0,.4);border-radius:8px;padding:12px;}
+.result-stat-lbl{font-size:7px;color:#6d28d9;letter-spacing:2px;margin-bottom:4px;}
+.result-stat-val{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;color:#e9d5ff;}
+.result-stat-val.gold{color:#fbbf24;}
+.result-stat-val.green{color:#34d399;}
+.multiplier-badge{display:inline-block;padding:6px 18px;border-radius:20px;font-family:'Orbitron',monospace;font-size:13px;font-weight:900;letter-spacing:2px;margin-bottom:12px;}
+.mult-base{background:rgba(109,40,217,.3);border:1px solid rgba(139,92,246,.5);color:#c4b5fd;}
+.mult-uncommon{background:rgba(5,150,105,.3);border:1px solid rgba(52,211,153,.5);color:#34d399;}
+.mult-rare{background:rgba(37,99,235,.3);border:1px solid rgba(96,165,250,.5);color:#93c5fd;}
+.mult-epic{background:rgba(124,58,237,.4);border:1px solid #a78bfa;color:#e9d5ff;}
+.mult-legendary{background:linear-gradient(135deg,rgba(234,179,8,.3),rgba(217,119,6,.3));border:2px solid #fbbf24;color:#fbbf24;text-shadow:0 0 12px #f59e0b;animation:glow 1.5s ease-in-out infinite;}
+@keyframes glow{0%,100%{box-shadow:0 0 12px rgba(251,191,36,.4);}50%{box-shadow:0 0 28px rgba(251,191,36,.8);}}
+.entropy-proof{font-family:'Share Tech Mono',monospace;font-size:8px;color:#4c1d95;word-break:break-all;background:rgba(0,0,0,.5);padding:10px;border-radius:6px;margin-top:8px;text-align:left;}
+.entropy-proof span{color:#7c3aed;}
+
+/* Leaderboard */
+.lb-table{width:100%;border-collapse:collapse;margin-top:10px;}
+.lb-table th{font-size:7px;color:#6d28d9;letter-spacing:2px;padding:6px 10px;text-align:left;border-bottom:1px solid rgba(139,92,246,.15);}
+.lb-table td{font-size:10px;padding:8px 10px;border-bottom:1px solid rgba(139,92,246,.07);color:#c4b5fd;}
+.lb-table tr:first-child td{color:#ffd700;}
+.lb-table tr:nth-child(2) td{color:#c0c0c0;}
+.lb-table tr:nth-child(3) td{color:#cd7f32;}
+.lb-table td.name{font-weight:700;color:#e9d5ff;}
+.lb-table td.score{font-family:'Orbitron',monospace;color:#e9d5ff;}
+.lb-table td.mult{font-size:8px;}
+.lb-table td.bonus{color:#34d399;}
+.lb-table .rank{font-family:'Orbitron',monospace;font-size:9px;color:#4c1d95;width:32px;}
+.empty-lb{text-align:center;padding:20px;font-size:9px;color:#4c1d95;letter-spacing:1px;line-height:2;}
+
+/* Network info */
+.net-info{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.net-chip{font-size:8px;color:#7c3aed;background:rgba(109,40,217,.12);border:1px solid rgba(139,92,246,.2);padding:4px 10px;border-radius:12px;letter-spacing:1px;}
+.net-chip.live{border-color:rgba(52,211,153,.4);color:#34d399;}
+
+/* How it works */
+.step-list{display:flex;flex-direction:column;gap:12px;margin-top:4px;}
+.step{display:flex;gap:12px;align-items:flex-start;}
+.step-num{width:22px;height:22px;border-radius:50%;background:rgba(109,40,217,.3);border:1px solid rgba(139,92,246,.4);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:9px;color:#a78bfa;flex-shrink:0;margin-top:1px;}
+.step-txt{font-size:10px;color:#c4b5fd;line-height:1.7;}
+.step-txt strong{color:#e9d5ff;font-family:'Orbitron',monospace;font-size:9px;letter-spacing:1px;}
+
+/* Explorer link */
+a.explorer-link{color:#a78bfa;text-decoration:none;font-size:9px;letter-spacing:1px;}
+a.explorer-link:hover{color:#c4b5fd;text-decoration:underline;}
+
+/* Loading spinner */
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid rgba(139,92,246,.3);border-top-color:#a78bfa;border-radius:50%;animation:spin .7s linear infinite;margin-right:6px;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <span class="logo">PYTH DEFENDER</span>
+    <div class="tagline">ON-CHAIN SCORE SUBMISSION</div>
+    <div class="pyth-badge">POWERED BY PYTH ENTROPY V2 ON OPTIMISM SEPOLIA</div>
+  </div>
+
+  <!-- Network info -->
+  <div class="card">
+    <div class="card-title">NETWORK</div>
+    <div class="net-info">
+      <span class="net-chip live">⬤ OPTIMISM SEPOLIA TESTNET</span>
+      <span class="net-chip">CHAIN ID: 11155420</span>
+      <span class="net-chip">ENTROPY: 0x4821932D...7061</span>
+      <span class="net-chip">FREE TESTNET ETH REQUIRED</span>
+    </div>
+    <div style="font-size:9px;color:#4c1d95;line-height:1.8">
+      Get free testnet ETH: 
+      <a class="explorer-link" href="https://console.optimism.io/faucet" target="_blank">console.optimism.io/faucet</a>
+      &nbsp;·&nbsp;
+      <a class="explorer-link" href="https://faucets.chain.link/optimism-sepolia" target="_blank">faucets.chain.link</a>
+    </div>
+  </div>
+
+  <!-- Wallet Connect -->
+  <div class="card">
+    <div class="card-title">WALLET</div>
+    <div class="wallet-row">
+      <div class="wallet-addr empty" id="walletAddr">Not connected — click Connect Wallet</div>
+      <button class="btn btn-primary" id="connectBtn" onclick="connectWallet()">CONNECT WALLET</button>
+    </div>
+    <div id="walletStatus" style="margin-top:10px;font-size:9px;color:#4c1d95;"></div>
+  </div>
+
+  <!-- Submit Score -->
+  <div class="card">
+    <div class="card-title">SUBMIT SCORE — POWERED BY PYTH ENTROPY</div>
+    <div class="form-row">
+      <div class="form-group" style="flex:1;min-width:120px">
+        <label>CALLSIGN (max 12)</label>
+        <input type="text" id="nameInput" maxlength="12" placeholder="KHALEESI" autocomplete="off" spellcheck="false"/>
+      </div>
+      <div class="form-group" style="width:120px">
+        <label>SCORE</label>
+        <input type="number" id="scoreInput" placeholder="1500" min="1"/>
+      </div>
+      <div class="form-group" style="width:80px">
+        <label>WAVE</label>
+        <input type="number" id="waveInput" placeholder="3" min="1" max="20"/>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-success" id="submitBtn" onclick="submitScore()" disabled>
+        SUBMIT SCORE ON-CHAIN
+      </button>
+      <span style="font-size:9px;color:#4c1d95">Fee: ~0.0001 ETH (testnet)</span>
+    </div>
+
+    <div class="status-box" id="statusBox">
+      <div class="status-line">Connect your wallet to begin.</div>
+    </div>
+
+    <!-- Result after callback -->
+    <div class="result-card" id="resultCard">
+      <div class="result-title">⬡ PYTH ENTROPY REVEALED</div>
+      <div id="multBadge" class="multiplier-badge mult-base">1.0× BASE</div>
+      <div class="result-grid">
+        <div class="result-stat">
+          <div class="result-stat-lbl">RAW SCORE</div>
+          <div class="result-stat-val" id="resRaw">—</div>
+        </div>
+        <div class="result-stat">
+          <div class="result-stat-lbl">MULTIPLIER</div>
+          <div class="result-stat-val gold" id="resMult">—</div>
+        </div>
+        <div class="result-stat">
+          <div class="result-stat-lbl">FINAL SCORE</div>
+          <div class="result-stat-val green" id="resFinal">—</div>
+        </div>
+      </div>
+      <div class="entropy-proof" id="entropyProof">
+        <span>Pyth Entropy Random Number (verifiable on-chain):</span><br>
+        <span id="randomNum">—</span>
+      </div>
+      <div style="margin-top:10px">
+        <a class="explorer-link" id="txLink" href="#" target="_blank">View transaction on Etherscan ↗</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- On-Chain Leaderboard -->
+  <div class="card">
+    <div class="card-title">ON-CHAIN LEADERBOARD</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button class="btn btn-ghost" onclick="loadLeaderboard()" style="font-size:9px;padding:8px 16px">↻ REFRESH</button>
+      <span style="font-size:9px;color:#4c1d95;align-self:center">Scores with Pyth Entropy bonus applied</span>
+    </div>
+    <div id="lbContent">
+      <div class="empty-lb">Connect wallet and load leaderboard<br>to see on-chain scores</div>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <div class="card">
+    <div class="card-title">HOW PYTH ENTROPY WORKS HERE</div>
+    <div class="step-list">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-txt"><strong>YOU PLAY THE GAME</strong> — Earn a score in Pyth Defender. Live BTC/ETH/SOL/BNB prices from Pyth Hermes feed the game in real-time.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-txt"><strong>SUBMIT ON-CHAIN</strong> — Click "Submit Score". Your browser calls <code>submitScore()</code> on the deployed contract, paying a small Pyth Entropy fee (~0.0001 ETH).</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-txt"><strong>ENTROPY REQUESTS</strong> — The contract calls <code>entropy.requestV2()</code> on Pyth's on-chain Entropy contract (0x4821932D…). A <code>sequenceNumber</code> is issued.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-txt"><strong>PYTH REVEALS</strong> — Pyth's off-chain Fortuna service detects the request and calls back <code>entropyCallback()</code> on your contract with a cryptographically secure <code>bytes32 randomNumber</code>.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-txt"><strong>BONUS APPLIED</strong> — The random number maps to a bonus tier: <strong>1.0× (50%)</strong> · <strong>1.25× (25%)</strong> · <strong>1.5× (15%)</strong> · <strong>2.0× (8%)</strong> · <strong>2.5× LEGENDARY (2%)</strong>. Final score is stored on-chain — tamper-proof and fully verifiable.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:20px 0;font-size:8px;color:#2d1060;letter-spacing:2px">
+    CONTRACT SOURCE: PythDefenderScores.sol · APACHE 2.0 · PYTH PLAYGROUND HACKATHON 2026
+  </div>
+
+</div>
+
+<script>
+// ── CONTRACT CONFIG ───────────────────────────────────────────────────────
+// UPDATE THIS with your deployed contract address after running deploy.sh
+var CONTRACT_ADDRESS = 'PASTE_YOUR_DEPLOYED_CONTRACT_ADDRESS_HERE';
+
+var CHAIN_ID = '0xaa36a7'; // Optimism Sepolia: 11155420 in hex
+var RPC_URL  = 'https://sepolia.optimism.io';
+var EXPLORER = 'https://sepolia-optimism.etherscan.io';
+
+// ── CONTRACT ABI (subset needed for browser interaction) ──────────────────
+var CONTRACT_ABI = [
+  // submitScore
+  {
+    "name": "submitScore",
+    "type": "function",
+    "stateMutability": "payable",
+    "inputs": [
+      {"name": "playerName", "type": "string"},
+      {"name": "rawScore",   "type": "uint256"},
+      {"name": "wave",       "type": "uint256"}
+    ],
+    "outputs": []
+  },
+  // getEntropyFee
+  {
+    "name": "getEntropyFee",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{"name": "", "type": "uint128"}]
+  },
+  // getLeaderboard
+  {
+    "name": "getLeaderboard",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [{"name": "n", "type": "uint256"}],
+    "outputs": [{
+      "name": "",
+      "type": "tuple[]",
+      "components": [
+        {"name": "player",             "type": "address"},
+        {"name": "playerName",         "type": "string"},
+        {"name": "finalScore",         "type": "uint256"},
+        {"name": "wave",               "type": "uint256"},
+        {"name": "bonusMultiplierBps", "type": "uint256"},
+        {"name": "timestamp",          "type": "uint64"}
+      ]
+    }]
+  },
+  // Events
+  {
+    "name": "ScoreSubmitted",
+    "type": "event",
+    "inputs": [
+      {"name": "sequenceNumber", "type": "uint64",  "indexed": true},
+      {"name": "player",         "type": "address", "indexed": true},
+      {"name": "playerName",     "type": "string",  "indexed": false},
+      {"name": "rawScore",       "type": "uint256", "indexed": false},
+      {"name": "wave",           "type": "uint256", "indexed": false}
+    ]
+  },
+  {
+    "name": "ScoreFinalized",
+    "type": "event",
+    "inputs": [
+      {"name": "sequenceNumber",      "type": "uint64",  "indexed": true},
+      {"name": "player",              "type": "address", "indexed": true},
+      {"name": "playerName",          "type": "string",  "indexed": false},
+      {"name": "rawScore",            "type": "uint256", "indexed": false},
+      {"name": "bonusMultiplierBps",  "type": "uint256", "indexed": false},
+      {"name": "finalScore",          "type": "uint256", "indexed": false},
+      {"name": "entropyRandomNumber", "type": "bytes32", "indexed": false}
+    ]
+  }
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+var walletAddress = null;
+var provider      = null;
+var signer        = null;
+var contract      = null;
+
+// ── HELPERS ───────────────────────────────────────────────────────────────
+function log(msg, type) {
+  type = type || 'info';
+  var box = document.getElementById('statusBox');
+  var line = document.createElement('div');
+  line.className = 'status-line ' + type;
+  line.innerHTML = msg;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+function clearLog() {
+  document.getElementById('statusBox').innerHTML = '';
+}
+function shortAddr(addr) {
+  return addr.slice(0,6) + '…' + addr.slice(-4);
+}
+function fmtMultiplier(bps) {
+  return (Number(bps) / 10000).toFixed(2) + '×';
+}
+function multClass(bps) {
+  var n = Number(bps);
+  if(n >= 25000) return 'mult-legendary';
+  if(n >= 20000) return 'mult-epic';
+  if(n >= 15000) return 'mult-rare';
+  if(n >= 12500) return 'mult-uncommon';
+  return 'mult-base';
+}
+function multLabel(bps) {
+  var n = Number(bps);
+  if(n >= 25000) return '★ 2.5× LEGENDARY ★';
+  if(n >= 20000) return '⬡ 2.0× EPIC';
+  if(n >= 15000) return '◆ 1.5× RARE';
+  if(n >= 12500) return '▲ 1.25× UNCOMMON';
+  return '1.0× BASE';
+}
+
+// ── WALLET CONNECT ─────────────────────────────────────────────────────────
+async function connectWallet() {
+  if(typeof window.ethereum === 'undefined') {
+    alert('MetaMask not detected!\n\nInstall MetaMask from metamask.io and reload.');
+    return;
+  }
+
+  try {
+    // Request account access
+    var accounts = await window.ethereum.request({method: 'eth_requestAccounts'});
+    walletAddress = accounts[0];
+
+    // Switch to Optimism Sepolia
+    try {
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{chainId: CHAIN_ID}]
+      });
+    } catch(switchErr) {
+      // Chain not added — add it
+      if(switchErr.code === 4902) {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: CHAIN_ID,
+            chainName: 'Optimism Sepolia',
+            nativeCurrency: {name: 'ETH', symbol: 'ETH', decimals: 18},
+            rpcUrls: ['https://sepolia.optimism.io'],
+            blockExplorerUrls: ['https://sepolia-optimism.etherscan.io']
+          }]
+        });
+      }
+    }
+
+    // Dynamically load ethers v6 from CDN
+    if(typeof ethers === 'undefined') {
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/ethers/6.9.0/ethers.umd.min.js');
+    }
+
+    provider = new ethers.BrowserProvider(window.ethereum);
+    signer   = await provider.getSigner();
+
+    // Validate contract address
+    if(CONTRACT_ADDRESS === 'PASTE_YOUR_DEPLOYED_CONTRACT_ADDRESS_HERE') {
+      document.getElementById('walletAddr').textContent = shortAddr(walletAddress) + ' ✓';
+      document.getElementById('walletAddr').classList.remove('empty');
+      document.getElementById('walletAddr').style.color = '#fbbf24';
+      document.getElementById('walletStatus').textContent = '⚠ Contract not deployed yet. Run deploy.sh then paste the address into CONTRACT_ADDRESS in this file.';
+      document.getElementById('walletStatus').style.color = '#fbbf24';
+      document.getElementById('connectBtn').textContent = 'CONNECTED';
+      document.getElementById('connectBtn').disabled = true;
+      clearLog();
+      log('⚠ Wallet connected but contract address not set.', 'warn');
+      log('Deploy PythDefenderScores.sol using deploy.sh, then paste the address at the top of this file.', 'warn');
+      return;
+    }
+
+    contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+    // Get fee
+    var fee = await contract.getEntropyFee();
+    var feeEth = ethers.formatEther(fee);
+
+    document.getElementById('walletAddr').textContent = walletAddress;
+    document.getElementById('walletAddr').classList.remove('empty');
+    document.getElementById('walletStatus').textContent = 'Network: Optimism Sepolia · Entropy fee: ' + parseFloat(feeEth).toFixed(6) + ' ETH';
+    document.getElementById('walletStatus').style.color = '#34d399';
+    document.getElementById('connectBtn').textContent = 'CONNECTED ✓';
+    document.getElementById('connectBtn').disabled = true;
+    document.getElementById('submitBtn').disabled = false;
+
+    clearLog();
+    log('✓ Wallet connected: ' + shortAddr(walletAddress), 'ok');
+    log('✓ Optimism Sepolia connected', 'ok');
+    log('✓ Pyth Entropy contract loaded', 'ok');
+    log('✓ Entropy fee: ' + parseFloat(feeEth).toFixed(6) + ' ETH', 'ok');
+    log('Ready to submit scores on-chain!', 'info');
+
+    await loadLeaderboard();
+
+  } catch(e) {
+    log('✗ Connection failed: ' + e.message, 'err');
+    console.error(e);
+  }
+}
+
+// ── SUBMIT SCORE ───────────────────────────────────────────────────────────
+async function submitScore() {
+  if(!contract || !signer) { log('Connect wallet first', 'err'); return; }
+
+  var name  = document.getElementById('nameInput').value.trim().toUpperCase();
+  var score = parseInt(document.getElementById('scoreInput').value);
+  var wave  = parseInt(document.getElementById('waveInput').value);
+
+  if(!name || name.length > 12)  { log('✗ Name must be 1-12 characters', 'err'); return; }
+  if(!score || score <= 0)       { log('✗ Enter a valid score', 'err'); return; }
+  if(!wave  || wave  < 1 || wave > 20) { log('✗ Wave must be 1-20', 'err'); return; }
+
+  clearLog();
+  document.getElementById('resultCard').style.display = 'none';
+  document.getElementById('submitBtn').disabled = true;
+
+  try {
+    // 1) Get current fee from contract
+    log('<span class="spinner"></span>Getting Pyth Entropy fee...', 'info');
+    var fee = await contract.getEntropyFee();
+    var feeEth = ethers.formatEther(fee);
+    log('✓ Entropy fee: ' + parseFloat(feeEth).toFixed(6) + ' ETH', 'ok');
+
+    // 2) Send transaction
+    log('<span class="spinner"></span>Sending transaction — confirm in MetaMask...', 'info');
+    var tx = await contract.submitScore(name, score, wave, {value: fee});
+    log('✓ Transaction sent: <a class="explorer-link" href="' + EXPLORER + '/tx/' + tx.hash + '" target="_blank">' + tx.hash.slice(0,18) + '… ↗</a>', 'ok');
+    document.getElementById('txLink').href = EXPLORER + '/tx/' + tx.hash;
+
+    // 3) Wait for confirmation
+    log('<span class="spinner"></span>Waiting for block confirmation...', 'info');
+    var receipt = await tx.wait(1);
+    log('✓ Confirmed in block ' + receipt.blockNumber, 'ok');
+
+    // Get sequenceNumber from ScoreSubmitted event
+    var submittedEvent = receipt.logs
+      .map(function(l){ try { return contract.interface.parseLog(l); } catch(e){ return null; } })
+      .find(function(e){ return e && e.name === 'ScoreSubmitted'; });
+
+    var seqNum = submittedEvent ? submittedEvent.args.sequenceNumber.toString() : '?';
+    log('✓ Pyth Entropy sequence #' + seqNum + ' — waiting for Fortuna callback...', 'ok');
+
+    // 4) Poll for ScoreFinalized event (Pyth Fortuna callback takes 1-3 blocks)
+    log('<span class="spinner"></span>Pyth Fortuna is generating your random bonus multiplier...', 'info');
+    await pollForFinalized(tx.hash, receipt.blockNumber);
+
+  } catch(e) {
+    log('✗ Error: ' + (e.reason || e.message || String(e)), 'err');
+    console.error(e);
+    document.getElementById('submitBtn').disabled = false;
+  }
+}
+
+// ── POLL FOR FINALIZED EVENT ────────────────────────────────────────────────
+async function pollForFinalized(origTxHash, fromBlock) {
+  var maxAttempts = 30; // poll for up to ~60 seconds
+  var attempt = 0;
+
+  while(attempt < maxAttempts) {
+    await sleep(2000);
+    attempt++;
+
+    try {
+      var currentBlock = await provider.getBlockNumber();
+      var filter = contract.filters.ScoreFinalized();
+      var events = await contract.queryFilter(filter, fromBlock, currentBlock);
+
+      // Find event for our wallet
+      var myEvent = events.find(function(e){
+        return e.args.player.toLowerCase() === walletAddress.toLowerCase();
+      });
+
+      if(myEvent) {
+        var args = myEvent.args;
+        log('✓ Pyth Entropy callback received! Sequence finalized.', 'ok');
+        log('✓ Random number: ' + args.entropyRandomNumber, 'ok');
+        showResult(args);
+        document.getElementById('submitBtn').disabled = false;
+        await loadLeaderboard();
+        return;
+      }
+
+      log('⌛ Waiting for Pyth Fortuna callback... (attempt ' + attempt + '/' + maxAttempts + ')', 'info');
+
+    } catch(err) {
+      // Keep polling
+    }
+  }
+
+  log('⚠ Callback not detected after ' + maxAttempts + ' attempts. Check explorer for ScoreFinalized event.', 'warn');
+  document.getElementById('submitBtn').disabled = false;
+}
+
+// ── SHOW RESULT ────────────────────────────────────────────────────────────
+function showResult(args) {
+  var bps       = Number(args.bonusMultiplierBps);
+  var rawScore  = Number(args.rawScore);
+  var finalScore= Number(args.finalScore);
+  var randomNum = args.entropyRandomNumber;
+
+  var card  = document.getElementById('resultCard');
+  var badge = document.getElementById('multBadge');
+
+  badge.className = 'multiplier-badge ' + multClass(bps);
+  badge.textContent = multLabel(bps);
+
+  document.getElementById('resRaw').textContent   = rawScore.toLocaleString();
+  document.getElementById('resMult').textContent  = fmtMultiplier(bps);
+  document.getElementById('resFinal').textContent = finalScore.toLocaleString();
+  document.getElementById('randomNum').textContent = randomNum;
+
+  card.style.display = 'block';
+
+  // Shake effect for legendary
+  if(bps >= 25000) {
+    card.style.animation = 'glow 1.5s ease-in-out infinite';
+    log('★★★ LEGENDARY MULTIPLIER! 2.5× — Your score is: ' + finalScore.toLocaleString(), 'ok');
+  } else {
+    log('Bonus multiplier: ' + fmtMultiplier(bps) + ' · Final score: ' + finalScore.toLocaleString(), 'ok');
+  }
+}
+
+// ── LOAD LEADERBOARD ───────────────────────────────────────────────────────
+async function loadLeaderboard() {
+  if(!contract) return;
+
+  var lbDiv = document.getElementById('lbContent');
+  lbDiv.innerHTML = '<div class="empty-lb"><span class="spinner"></span>Loading on-chain leaderboard...</div>';
+
+  try {
+    var entries = await contract.getLeaderboard(20);
+
+    if(!entries || entries.length === 0) {
+      lbDiv.innerHTML = '<div class="empty-lb">No scores yet on-chain.<br>Be the first to submit!</div>';
+      return;
+    }
+
+    var html = '<table class="lb-table"><thead><tr><th class="rank">#</th><th>CALLSIGN</th><th>FINAL SCORE</th><th>WAVE</th><th>BONUS</th></tr></thead><tbody>';
+
+    entries.forEach(function(e, i) {
+      var bps       = Number(e.bonusMultiplierBps);
+      var final     = Number(e.finalScore);
+      var wave      = Number(e.wave);
+      var name      = e.playerName || shortAddr(e.player);
+      var isMe      = e.player.toLowerCase() === (walletAddress || '').toLowerCase();
+
+      html += '<tr' + (isMe ? ' style="background:rgba(139,92,246,.15)"' : '') + '>';
+      html += '<td class="rank">' + (i+1) + '</td>';
+      html += '<td class="name">' + name + (isMe?' <span style="color:#a78bfa;font-size:7px">YOU</span>':'') + '</td>';
+      html += '<td class="score">' + final.toLocaleString() + '</td>';
+      html += '<td>W' + wave + '</td>';
+      html += '<td class="mult ' + (bps>=25000?'bonus':'') + '">' + fmtMultiplier(bps) + '</td>';
+      html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    lbDiv.innerHTML = html;
+
+  } catch(e) {
+    lbDiv.innerHTML = '<div class="empty-lb">Error loading leaderboard.<br>' + (e.reason||e.message||'') + '</div>';
+  }
+}
+
+// ── UTILS ──────────────────────────────────────────────────────────────────
+function sleep(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
+function loadScript(src) {
+  return new Promise(function(resolve, reject){
+    var s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+// Listen for account changes
+if(typeof window.ethereum !== 'undefined') {
+  window.ethereum.on('accountsChanged', function(){ window.location.reload(); });
+  window.ethereum.on('chainChanged',    function(){ window.location.reload(); });
+}
+</script>
+</body>
+</html>
