@@ -16,7 +16,7 @@
 
 ## What It Does
 
-Pyth Defender is a full arcade space shooter. You pilot a PYTH ship defending the last oracle node from the **FUD Syndicate** — waves of drones, bots, REKT Missiles, and a 3-phase boss called the **Crypto Kraken**.
+Pyth Defender is a full arcade space shooter. You pilot a PYTH ship defending the last oracle node from the **FUD Syndicate**  waves of drones, bots, REKT Missiles, and a 3-phase boss called the **Crypto Kraken**.
 
 - **6 waves** of escalating difficulty with a wave timer
 - **6 weapon tiers** unlocking as you advance (Diamond Shot → Void Cannon)
